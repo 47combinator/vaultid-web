@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VaultID — Secure Identity Wallet</title>
+<meta name="description" content="VaultID is a secure, encrypted identity wallet. Share verified identity data with one-time cryptographic keys.">
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="landing-body">
+
+<!-- NAV -->
+<nav class="landing-nav">
+  <a href="/" class="landing-logo">
+    <div class="landing-logo-mark">🏛</div>
+    <span class="landing-logo-text">VaultID</span>
+  </a>
+  <div class="landing-nav-links">
+    <a href="/verify.html">Verify a Key</a>
+    <a href="#" class="btn btn-gold btn-sm" onclick="openAuth('login')">Sign In</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">🔐 End-to-end encrypted</div>
+    <h1>Your identity,<br><span class="gold">your control.</span></h1>
+    <p class="hero-sub">
+      Import identity documents, extract data with AI, and share verified
+      credentials using one-time cryptographic keys. Only you decide what gets shared.
+    </p>
+    <div class="hero-actions">
+      <button class="btn btn-gold" onclick="openAuth('signup')">Create Free Account →</button>
+      <a href="/verify.html" class="btn btn-ghost" style="color:#f7f5f0;border-color:rgba(247,245,240,0.2);">Verify a Key</a>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<div class="features">
+  <div class="feature-card">
+    <div class="feature-icon">📸</div>
+    <div class="feature-title">AI Document Scan</div>
+    <div class="feature-desc">Upload a passport, license, or ID card — AI extracts all fields instantly.</div>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">🔑</div>
+    <div class="feature-title">One-Time Keys</div>
+    <div class="feature-desc">Share only the fields you choose via a cryptographic key that expires after one use.</div>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">✅</div>
+    <div class="feature-title">Instant Verify</div>
+    <div class="feature-desc">Anyone can verify a key — no account needed. Tamper-proof ECDSA signatures.</div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="landing-footer">
+  VaultID · Built with Web Crypto API · Your data never leaves your control
+</footer>
+
+<!-- AUTH MODAL -->
+<div class="auth-overlay" id="authOverlay" onclick="if(event.target===this)closeAuth()">
+  <div class="auth-card" id="authCard">
+    <button class="auth-close" onclick="closeAuth()">×</button>
+
+    <!-- LOGIN FORM -->
+    <div id="loginForm">
+      <div class="auth-card-head">
+        <div class="auth-card-title">Welcome back</div>
+        <div class="auth-card-sub">// sign in to your VaultID wallet</div>
+      </div>
+      <div class="auth-error" id="loginError"></div>
+      <div class="auth-field">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn btn-gold btn-full" id="loginBtn" onclick="handleLogin()" style="margin-top:8px;">Sign In →</button>
+      <div class="auth-switch">
+        Don't have an account? <a onclick="switchAuth('signup')">Sign up</a>
+      </div>
+    </div>
+
+    <!-- SIGNUP FORM -->
+    <div id="signupForm" style="display:none">
+      <div class="auth-card-head">
+        <div class="auth-card-title">Create account</div>
+        <div class="auth-card-sub">// free forever · no credit card</div>
+      </div>
+      <div class="auth-error" id="signupError"></div>
+      <div class="auth-field">
+        <label>Email</label>
+        <input type="email" id="signupEmail" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <input type="password" id="signupPassword" placeholder="Min 6 characters" autocomplete="new-password">
+      </div>
+      <div class="auth-field">
+        <label>Confirm Password</label>
+        <input type="password" id="signupConfirm" placeholder="••••••••" autocomplete="new-password">
+      </div>
+      <button class="btn btn-gold btn-full" id="signupBtn" onclick="handleSignup()" style="margin-top:8px;">Create Account →</button>
+      <div class="auth-switch">
+        Already have an account? <a onclick="switchAuth('login')">Sign in</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ══════════════════════════════════════════
+//  SUPABASE CONFIG
+// ══════════════════════════════════════════
+// ⚠️ REPLACE THESE with your Supabase project values
+const SUPABASE_URL  = 'https://fygrjlnuzwrjcokyabcj.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5Z3JqbG51endyamNva3lhYmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxMDc4OTksImV4cCI6MjA4NzY4Mzg5OX0.Aluidb3u4zu1KkUZ8nss9jHwQgNX-W0nzoDog0kmeCU';
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// Check if already logged in
+(async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) window.location.href = '/app.html';
+})();
+
+// ══════════════════════════════════════════
+//  AUTH UI
+// ══════════════════════════════════════════
+function openAuth(mode) {
+  document.getElementById('authOverlay').classList.add('show');
+  switchAuth(mode);
+}
+
+function closeAuth() {
+  document.getElementById('authOverlay').classList.remove('show');
+  clearErrors();
+}
+
+function switchAuth(mode) {
+  clearErrors();
+  document.getElementById('loginForm').style.display  = mode === 'login' ? 'block' : 'none';
+  document.getElementById('signupForm').style.display = mode === 'signup' ? 'block' : 'none';
+}
+
+function clearErrors() {
+  document.querySelectorAll('.auth-error').forEach(el => { el.classList.remove('show'); el.textContent = ''; });
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+// ══════════════════════════════════════════
+//  LOGIN
+// ══════════════════════════════════════════
+async function handleLogin() {
+  clearErrors();
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+
+  if (!email || !password) { showError('loginError', 'Please fill in all fields.'); return; }
+
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = 'Signing in...';
+
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    showError('loginError', error.message);
+    btn.disabled = false; btn.textContent = 'Sign In →';
+    return;
+  }
+
+  window.location.href = '/app.html';
+}
+
+// ══════════════════════════════════════════
+//  SIGNUP
+// ══════════════════════════════════════════
+async function handleSignup() {
+  clearErrors();
+  const email    = document.getElementById('signupEmail').value.trim();
+  const password = document.getElementById('signupPassword').value;
+  const confirm  = document.getElementById('signupConfirm').value;
+
+  if (!email || !password || !confirm) { showError('signupError', 'Please fill in all fields.'); return; }
+  if (password.length < 6) { showError('signupError', 'Password must be at least 6 characters.'); return; }
+  if (password !== confirm) { showError('signupError', 'Passwords do not match.'); return; }
+
+  const btn = document.getElementById('signupBtn');
+  btn.disabled = true; btn.textContent = 'Creating account...';
+
+  const { error } = await supabase.auth.signUp({ email, password });
+
+  if (error) {
+    showError('signupError', error.message);
+    btn.disabled = false; btn.textContent = 'Create Account →';
+    return;
+  }
+
+  toast('✅ Account created! Check your email to confirm, then sign in.');
+  btn.disabled = false; btn.textContent = 'Create Account →';
+  setTimeout(() => switchAuth('login'), 2000);
+}
+
+// ══════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// Enter key support
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (document.getElementById('loginForm').style.display !== 'none') handleLogin();
+  else handleSignup();
+});
+</script>
+</body>
+</html>

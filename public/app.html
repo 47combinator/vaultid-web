@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VaultID — Identity Wallet</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+
+<body>
+    <!-- Loading screen while checking auth -->
+    <div id="loadingScreen"
+        style="position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;">
+        <div style="text-align:center;">
+            <div style="font-size:36px;margin-bottom:12px;">🏛</div>
+            <div style="font-family:var(--mono);font-size:12px;color:var(--muted);">Loading VaultID…</div>
+        </div>
+    </div>
+
+    <div class="shell" id="appShell" style="display:none;">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-mark">🏛</div>
+                <div>
+                    <div class="logo-text">VaultID</div>
+                    <div class="logo-sub">Identity Wallet</div>
+                </div>
+            </div>
+
+            <!-- User badge -->
+            <div class="user-badge">
+                <div class="user-avatar">👤</div>
+                <div class="user-email" id="userEmail">—</div>
+                <button class="logout-btn" onclick="handleLogout()" title="Sign out">🚪</button>
+            </div>
+
+            <div class="nav-group">
+                <div class="nav-group-label">Documents</div>
+                <button class="nav-btn active" data-view="upload">
+                    <span class="ni">📄</span> Import Document
+                </button>
+                <button class="nav-btn" data-view="credentials">
+                    <span class="ni">🪪</span> My Credentials
+                    <span class="nbadge" id="credCount">0</span>
+                </button>
+            </div>
+
+            <div class="nav-group">
+                <div class="nav-group-label">Sharing</div>
+                <button class="nav-btn" data-view="share">
+                    <span class="ni">🔑</span> Share Data
+                </button>
+                <a class="nav-btn" href="/verify.html">
+                    <span class="ni">🔍</span> Verify Key
+                </a>
+            </div>
+
+            <div class="sidebar-spacer"></div>
+
+            <div class="sidebar-security">
+                <span>🔒</span>
+                <div>Credentials encrypted<br>& stored securely</div>
+            </div>
+        </aside>
+
+        <!-- MAIN -->
+        <main class="main">
+
+            <!-- VIEW: UPLOAD -->
+            <section class="view active" id="view-upload">
+                <div class="view-head">
+                    <div class="view-title">Import Document</div>
+                    <div class="view-sub">// upload your ID → AI reads it → saved to your wallet</div>
+                </div>
+
+                <div class="drop-zone" id="dropZone">
+                    <input type="file" id="fileInput" accept="image/*,.pdf" onchange="handleFileInput(event)">
+                    <span class="drop-icon">📸</span>
+                    <div class="drop-title">Drop your document here</div>
+                    <div class="drop-hint">or click to browse · supports images and PDF</div>
+                    <div class="doc-pills">
+                        <span class="doc-pill">🛂 Passport</span>
+                        <span class="doc-pill">🚗 Driver's License</span>
+                        <span class="doc-pill">🪪 National ID Card</span>
+                    </div>
+                </div>
+
+                <div class="proc-box" id="procBox">
+                    <div class="proc-step" id="p1">
+                        <div class="proc-dot"></div><span>Reading document...</span>
+                    </div>
+                    <div class="proc-step" id="p2">
+                        <div class="proc-dot"></div><span>Extracting fields with AI...</span>
+                    </div>
+                    <div class="proc-step" id="p3">
+                        <div class="proc-dot"></div><span>Generating encryption keys...</span>
+                    </div>
+                    <div class="proc-step" id="p4">
+                        <div class="proc-dot"></div><span>Signing credential...</span>
+                    </div>
+                </div>
+
+                <div id="reviewCard" style="display:none">
+                    <div id="apiErrorBanner"
+                        style="display:none;align-items:flex-start;gap:12px;background:#fdf0f0;border:1.5px solid rgba(184,58,58,0.25);border-radius:12px;padding:16px 18px;margin-bottom:14px;">
+                        <span style="font-size:20px;flex-shrink:0;">⚠️</span>
+                        <div>
+                            <div style="font-weight:600;font-size:14px;color:#b83a3a;margin-bottom:3px;">AI extraction
+                                failed — please fill in manually</div>
+                            <div class="err-detail" style="font-family:var(--mono);font-size:11px;color:#9a4040;"></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-head">
+                            <div class="card-title">Review Extracted Data</div>
+                            <div class="card-sub">// all fields editable — correct anything before saving</div>
+                        </div>
+                        <div class="detected-badge" id="detectedBadge">📄 —</div>
+                        <div class="fields-grid" id="fieldsGrid"></div>
+                        <div class="divider"></div>
+                        <div class="row-end">
+                            <button class="btn btn-ghost" onclick="resetUpload()">← Start Over</button>
+                            <button class="btn btn-gold" onclick="saveCredential()">Save to Wallet →</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: CREDENTIALS -->
+            <section class="view" id="view-credentials">
+                <div class="view-head">
+                    <div class="view-title">My Credentials</div>
+                    <div class="view-sub">// stored securely · synced to your account</div>
+                </div>
+                <div id="credList"></div>
+            </section>
+
+            <!-- VIEW: SHARE -->
+            <section class="view" id="view-share">
+                <div class="view-head">
+                    <div class="view-title">Share Your Data</div>
+                    <div class="view-sub">// one-time key · expires after first use · you control what's shared</div>
+                </div>
+
+                <div class="card" id="shareStep1Card">
+                    <div class="card-head">
+                        <div class="card-title">1 — Select Credential</div>
+                        <div class="card-sub">// choose which document to share from</div>
+                    </div>
+                    <div id="shareCredPicker"></div>
+                </div>
+
+                <div class="card" id="shareStep2Card" style="display:none">
+                    <div class="card-head">
+                        <div class="card-title">2 — Choose What to Share</div>
+                        <div class="card-sub">// only ticked fields will be inside the key</div>
+                    </div>
+                    <div class="attr-grid" id="attrGrid"></div>
+                    <div style="margin-bottom:16px;">
+                        <div
+                            style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:7px;letter-spacing:0.5px;">
+                            REQUESTED BY (optional)</div>
+                        <input type="text" id="requesterField" placeholder="e.g. Airbnb, HDFC Bank, Zomato…"
+                            style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;font-family:var(--mono);font-size:13px;background:var(--surface2);color:var(--ink);outline:none;transition:border-color 0.2s;"
+                            onfocus="this.style.borderColor='var(--gold)'"
+                            onblur="this.style.borderColor='var(--border)'">
+                    </div>
+                    <button class="btn btn-gold btn-full" id="genKeyBtn" onclick="generateOneTimeKey()">
+                        🔑 Generate One-Time Key
+                    </button>
+                </div>
+
+                <div class="key-reveal" id="keyReveal">
+                    <div class="key-reveal-label">One-Time Share Key — click to copy</div>
+                    <div class="key-value-box" id="keyValueBox" onclick="copyKey()"></div>
+                    <div class="key-meta">
+                        <div class="key-meta-left" id="keyMetaLeft"></div>
+                        <div class="key-meta-right">
+                            <button class="key-btn key-btn-copy" onclick="copyKey()">Copy</button>
+                        </div>
+                    </div>
+                    <div class="shared-fields-preview">
+                        <div class="sfp-label">Fields included in this key</div>
+                        <div class="sfp-items" id="sfpItems"></div>
+                    </div>
+                    <div class="one-time-notice">
+                        <span>⚠</span>
+                        <span>This key works <strong>once only</strong>. Once verified, it is marked as used and will be
+                            rejected on re-use. Share it directly with whoever is requesting your data.</span>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // ════════════════════════════════════════════════════════
+        //  SUPABASE CONFIG
+        // ════════════════════════════════════════════════════════
+        // ⚠️ REPLACE THESE with your Supabase project values
+        const SUPABASE_URL = 'https://fygrjlnuzwrjcokyabcj.supabase.co';
+        const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5Z3JqbG51endyamNva3lhYmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxMDc4OTksImV4cCI6MjA4NzY4Mzg5OX0.Aluidb3u4zu1KkUZ8nss9jHwQgNX-W0nzoDog0kmeCU';
+
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+        let currentUser = null;
+
+        // ════════════════════════════════════════════════════════
+        //  AUTH GUARD
+        // ════════════════════════════════════════════════════════
+        (async () => {
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) {
+                window.location.href = '/';
+                return;
+            }
+            currentUser = session.user;
+            document.getElementById('userEmail').textContent = currentUser.email;
+            document.getElementById('loadingScreen').style.display = 'none';
+            document.getElementById('appShell').style.display = 'grid';
+            await loadCreds();
+            updateBadge();
+        })();
+
+        async function handleLogout() {
+            await sb.auth.signOut();
+            window.location.href = '/';
+        }
+
+        // ════════════════════════════════════════════════════════
+        //  STATE
+        // ════════════════════════════════════════════════════════
+        let creds = [];
+        let extracted = null;
+        let uploadedB64 = null;
+        let selectedCredIdx = null;
+        let lastGenKey = null;
+
+        // ════════════════════════════════════════════════════════
+        //  SUPABASE CREDENTIAL STORAGE
+        // ════════════════════════════════════════════════════════
+        async function loadCreds() {
+            const { data, error } = await sb
+                .from('credentials')
+                .select('*')
+                .order('saved_at', { ascending: false });
+            if (error) { console.error('Load error:', error); return; }
+            creds = (data || []).map(row => ({
+                id: row.id,
+                data: row.data,
+                publicKeyHex: row.public_key_hex,
+                signatureHex: row.signature_hex,
+                savedAt: row.saved_at,
+            }));
+            updateBadge();
+        }
+
+        async function insertCred(cred) {
+            const { error } = await sb.from('credentials').insert({
+                id: cred.id,
+                user_id: currentUser.id,
+                data: cred.data,
+                public_key_hex: cred.publicKeyHex,
+                signature_hex: cred.signatureHex,
+            });
+            if (error) { console.error('Insert error:', error); toast('❌ Failed to save: ' + error.message); return false; }
+            return true;
+        }
+
+        async function removeCred(id) {
+            const { error } = await sb.from('credentials').delete().eq('id', id);
+            if (error) { console.error('Delete error:', error); return false; }
+            return true;
+        }
+
+        // ════════════════════════════════════════════════════════
+        //  NAV
+        // ════════════════════════════════════════════════════════
+        document.querySelectorAll('.nav-btn[data-view]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const v = btn.dataset.view;
+                document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+                document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+                document.getElementById('view-' + v).classList.add('active');
+                btn.classList.add('active');
+                if (v === 'credentials') renderCreds();
+                if (v === 'share') initShareView();
+            });
+        });
+
+        function nav(view) {
+            document.querySelector(`.nav-btn[data-view="${view}"]`).click();
+        }
+
+        // ════════════════════════════════════════════════════════
+        //  UPLOAD + AI EXTRACTION
+        // ════════════════════════════════════════════════════════
+        const dropZone = document.getElementById('dropZone');
+
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault(); dropZone.classList.remove('over');
+            if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
+        });
+
+        function handleFileInput(e) {
+            if (e.target.files[0]) processFile(e.target.files[0]);
+        }
+
+        function processFile(file) {
+            const reader = new FileReader();
+            reader.onload = async ev => {
+                uploadedB64 = ev.target.result;
+                await extractFromDoc(uploadedB64, file.type);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        const FIELD_DEFS = {
+            passport: [
+                { key: 'fullName', label: 'Full Name' },
+                { key: 'firstName', label: 'First Name' },
+                { key: 'lastName', label: 'Last Name' },
+                { key: 'dateOfBirth', label: 'Date of Birth' },
+                { key: 'age', label: 'Age' },
+                { key: 'gender', label: 'Gender' },
+                { key: 'nationality', label: 'Nationality' },
+                { key: 'passportNumber', label: 'Passport No.' },
+                { key: 'expiryDate', label: 'Expiry Date' },
+                { key: 'issueDate', label: 'Issue Date' },
+                { key: 'placeOfBirth', label: 'Place of Birth' },
+                { key: 'issuingCountry', label: 'Issuing Country' },
+            ],
+            "driver's license": [
+                { key: 'fullName', label: 'Full Name' },
+                { key: 'dateOfBirth', label: 'Date of Birth' },
+                { key: 'age', label: 'Age' },
+                { key: 'gender', label: 'Gender' },
+                { key: 'licenseNumber', label: 'License No.' },
+                { key: 'licenseClass', label: 'License Class' },
+                { key: 'expiryDate', label: 'Expiry Date' },
+                { key: 'issueDate', label: 'Issue Date' },
+                { key: 'address', label: 'Address' },
+                { key: 'issuingState', label: 'Issuing State' },
+            ],
+            'national id': [
+                { key: 'fullName', label: 'Full Name' },
+                { key: 'firstName', label: 'First Name' },
+                { key: 'lastName', label: 'Last Name' },
+                { key: 'dateOfBirth', label: 'Date of Birth' },
+                { key: 'age', label: 'Age' },
+                { key: 'gender', label: 'Gender' },
+                { key: 'nationality', label: 'Nationality' },
+                { key: 'idNumber', label: 'ID Number' },
+                { key: 'expiryDate', label: 'Expiry Date' },
+                { key: 'address', label: 'Address' },
+                { key: 'issuingAuthority', label: 'Issued By' },
+            ],
+        };
+
+        async function extractFromDoc(b64, mimeType) {
+            const procBox = document.getElementById('procBox');
+            procBox.classList.add('show');
+            dropZone.style.opacity = '0.45';
+            dropZone.style.pointerEvents = 'none';
+
+            setProc(1, 'active');
+            await sleep(400);
+            setProc(1, 'done'); setProc(2, 'active');
+
+            const data64 = b64.split(',')[1];
+
+            const prompt = `You are an identity document OCR parser. Look carefully at this document image and extract every visible text field.
+
+Return ONLY a raw JSON object (no markdown fences, no explanation, just the JSON). Use null for fields not visible:
+{
+  "documentType": "Passport" or "Driver's License" or "National ID" or "Other",
+  "fullName": "full name as printed",
+  "firstName": "first/given name",
+  "lastName": "surname/family name",
+  "dateOfBirth": "date as printed on document",
+  "age": age as number or null,
+  "gender": "M or F or as shown",
+  "nationality": "as shown",
+  "passportNumber": "passport number if passport",
+  "licenseNumber": "license number if driving license",
+  "idNumber": "ID number if national ID",
+  "licenseClass": "class/category if driving license",
+  "expiryDate": "expiry date as printed",
+  "issueDate": "issue date as printed",
+  "address": "address if shown",
+  "placeOfBirth": "place of birth if shown",
+  "issuingCountry": "country that issued this",
+  "issuingState": "state/region if driving license",
+  "issuingAuthority": "issuing authority if shown"
+}`;
+
+            let apiError = null;
+
+            try {
+                const resp = await fetch('/api/extract', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mimeType, data64, prompt })
+                });
+
+                const json = await resp.json();
+
+                if (json.error) {
+                    apiError = json.error.message || 'API error';
+                    throw new Error(apiError);
+                }
+
+                const raw = (json.content || []).map(b => b.text || '').join('').trim();
+                const clean = raw.replace(/^```[\w]*\n?/, '').replace(/\n?```$/, '').trim();
+                extracted = JSON.parse(clean);
+
+                if (!extracted.documentType) extracted.documentType = 'Unknown';
+
+            } catch (e) {
+                apiError = apiError || e.message;
+                extracted = {
+                    documentType: 'Unknown',
+                    fullName: '', firstName: '', lastName: '',
+                    dateOfBirth: '', age: null, gender: '',
+                    nationality: '', passportNumber: '', licenseNumber: '',
+                    idNumber: '', expiryDate: '', issueDate: '',
+                    address: '', placeOfBirth: '', issuingCountry: '',
+                    issuingState: '', issuingAuthority: ''
+                };
+            }
+
+            setProc(2, 'done'); setProc(3, 'active');
+            await sleep(500);
+            setProc(3, 'done'); setProc(4, 'active');
+            await sleep(400);
+            setProc(4, 'done');
+            await sleep(250);
+
+            procBox.classList.remove('show');
+
+            if (apiError) {
+                showApiError(apiError);
+            } else {
+                showReview();
+            }
+        }
+
+        function setProc(n, state) {
+            const el = document.getElementById('p' + n);
+            el.classList.remove('s-active', 's-done');
+            if (state === 'active') el.classList.add('s-active');
+            if (state === 'done') el.classList.add('s-done');
+        }
+
+        function showApiError(errMsg) {
+            const banner = document.getElementById('apiErrorBanner');
+            if (banner) {
+                banner.style.display = 'flex';
+                banner.querySelector('.err-detail').textContent = errMsg || 'AI extraction failed.';
+            }
+            showReview(true);
+        }
+
+        function showReview(showAll = false) {
+            const docType = (extracted.documentType || 'Unknown').toLowerCase();
+            const badge = document.getElementById('detectedBadge');
+            const icons = { passport: '🛂', "driver's license": '🚗', 'national id': '🪪' };
+            const icon = icons[docType] || '📄';
+            badge.textContent = icon + ' ' + (extracted.documentType || 'Unknown');
+
+            let defs;
+            if (showAll) {
+                const seen = new Set();
+                defs = Object.values(FIELD_DEFS).flat().filter(f => {
+                    if (seen.has(f.key)) return false;
+                    seen.add(f.key); return true;
+                });
+            } else {
+                defs = FIELD_DEFS['national id'];
+                for (const [key, list] of Object.entries(FIELD_DEFS)) {
+                    if (docType.includes(key)) { defs = list; break; }
+                }
+            }
+
+            const grid = document.getElementById('fieldsGrid');
+            grid.innerHTML = '';
+            defs.forEach(({ key, label }) => {
+                const val = extracted[key];
+                if (!showAll && (val === null || val === undefined || val === '')) return;
+                const div = document.createElement('div');
+                div.className = 'field-wrap';
+                div.innerHTML = `
+      <div class="field-label">${label}</div>
+      <div class="field-val" contenteditable="true" spellcheck="false"
+        onblur="extracted['${key}'] = this.innerText.trim()">${val ?? ''}</div>`;
+                grid.appendChild(div);
+            });
+
+            if (showAll) {
+                const sel = document.createElement('div');
+                sel.style.cssText = 'grid-column:1/-1;display:flex;flex-direction:column;gap:5px;';
+                sel.innerHTML = `<div class="field-label">Document Type</div>
+      <select id="docTypeSelect" onchange="extracted.documentType=this.value;document.getElementById('detectedBadge').textContent=({'Passport':'🛂','Driver\\'s License':'🚗','National ID':'🪪'}[this.value]||'📄')+' '+this.value"
+        style="padding:9px 13px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-family:var(--mono);font-size:13px;color:var(--ink);outline:none;cursor:pointer;">
+        <option value="Passport">Passport</option>
+        <option value="Driver's License">Driver's License</option>
+        <option value="National ID">National ID</option>
+      </select>`;
+                grid.prepend(sel);
+            }
+
+            document.getElementById('reviewCard').style.display = 'block';
+            document.getElementById('reviewCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // ════════════════════════════════════════════════════════
+        //  SAVE CREDENTIAL (to Supabase)
+        // ════════════════════════════════════════════════════════
+        async function saveCredential() {
+            const pair = await crypto.subtle.generateKey(
+                { name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']
+            );
+            const pubRaw = await crypto.subtle.exportKey('raw', pair.publicKey);
+            const pubHex = hexOf(pubRaw);
+
+            const payload = stableJSON(extracted);
+            const sig = await crypto.subtle.sign(
+                { name: 'ECDSA', hash: 'SHA-256' }, pair.privateKey,
+                new TextEncoder().encode(payload)
+            );
+
+            const cred = {
+                id: crypto.randomUUID(),
+                data: { ...extracted },
+                publicKeyHex: pubHex,
+                signatureHex: hexOf(sig),
+                savedAt: new Date().toISOString(),
+            };
+
+            const ok = await insertCred(cred);
+            if (!ok) return;
+
+            creds.unshift(cred);
+            updateBadge();
+            toast('✅ Credential saved to wallet');
+            resetUpload();
+            nav('credentials');
+        }
+
+        function resetUpload() {
+            document.getElementById('reviewCard').style.display = 'none';
+            document.getElementById('apiErrorBanner').style.display = 'none';
+            document.getElementById('procBox').classList.remove('show');
+            document.getElementById('fileInput').value = '';
+            dropZone.style.opacity = '1';
+            dropZone.style.pointerEvents = 'auto';
+            [1, 2, 3, 4].forEach(n => setProc(n, ''));
+            extracted = null; uploadedB64 = null;
+        }
+
+        // ════════════════════════════════════════════════════════
+        //  CREDENTIALS VIEW
+        // ════════════════════════════════════════════════════════
+        function renderCreds() {
+            const list = document.getElementById('credList');
+            if (!creds.length) {
+                list.innerHTML = `<div class="empty-state"><div class="empty-icon">🪪</div><div class="empty-text">No credentials yet.<br>Import a document to get started.</div></div>`;
+                return;
+            }
+
+            const docIcon = t => ({ 'Passport': '🛂', "Driver's License": '🚗', 'National ID': '🪪' }[t] || '📄');
+
+            list.innerHTML = creds.map((c, i) => {
+                const d = c.data;
+                const fields = [
+                    { k: 'DOB', v: d.dateOfBirth },
+                    { k: 'Age', v: d.age },
+                    { k: 'Gender', v: d.gender },
+                    { k: 'Nationality', v: d.nationality },
+                    { k: 'Doc No.', v: d.passportNumber || d.licenseNumber || d.idNumber },
+                    { k: 'Expiry', v: d.expiryDate },
+                    { k: 'Address', v: d.address },
+                ].filter(f => f.v && f.v !== 'null');
+
+                return `<div class="cred-card">
+      <div class="cred-type-label">${docIcon(d.documentType)} ${d.documentType || 'Identity Document'}</div>
+      <div class="cred-name">${d.fullName || 'Unknown'}</div>
+      <div class="cred-fields-row">
+        ${fields.slice(0, 5).map(f => `<div class="cred-field">
+          <div class="cred-field-lbl">${f.k}</div>
+          <div class="cred-field-val">${String(f.v).slice(0, 24)}</div>
+        </div>`).join('')}
+      </div>
+      <div class="cred-foot">
+        <div class="cred-sig">SIG ${c.signatureHex.slice(0, 10)}…${c.signatureHex.slice(-6)}</div>
+        <div class="cred-actions">
+          <button class="cred-btn cred-btn-share" onclick="shareFromIdx(${i})">🔑 Share</button>
+          <button class="cred-btn cred-btn-delete" onclick="deleteCred(${i})">🗑</button>
+        </div>
+      </div>
+    </div>`;
+            }).join('');
+        }
+
+        async function deleteCred(i) {
+            const id = creds[i].id;
+            const ok = await removeCred(id);
+            if (!ok) return;
+            creds.splice(i, 1);
+            updateBadge(); renderCreds();
+            toast('Credential deleted.');
+        }
+
+        function shareFromIdx(i) {
+            selectedCredIdx = i;
+            nav('share');
+        }
+
+        // ════════════════════════════════════════════════════════
+        //  SHARE VIEW
+        // ════════════════════════════════════════════════════════
+        function initShareView() {
+            const picker = document.getElementById('shareCredPicker');
+            document.getElementById('shareStep2Card').style.display = 'none';
+            document.getElementById('keyReveal').classList.remove('show');
+
+            if (!creds.length) {
+                picker.innerHTML = `<div class="empty-state"><div class="empty-icon">🪪</div><div class="empty-text">No credentials saved.<br>Import a document first.</div></div>`;
+                return;
+            }
+
+            picker.innerHTML = creds.map((c, i) => `
+    <div class="select-cred-item ${selectedCredIdx === i ? 'picked' : ''}" id="sci-${i}" onclick="pickShareCred(${i})">
+      <div class="sci-icon">${{ Passport: '🛂', "Driver's License": '🚗', 'National ID': '🪪' }[c.data.documentType] || '📄'}</div>
+      <div>
+        <div class="sci-name">${c.data.fullName || 'Unknown'}</div>
+        <div class="sci-type">${c.data.documentType || 'Document'} · saved ${new Date(c.savedAt).toLocaleDateString()}</div>
+      </div>
+    </div>`).join('');
+
+            if (selectedCredIdx !== null && creds[selectedCredIdx]) buildAttrGrid(selectedCredIdx);
+        }
+
+        function pickShareCred(i) {
+            selectedCredIdx = i;
+            document.querySelectorAll('.select-cred-item').forEach(el => el.classList.remove('picked'));
+            document.getElementById('sci-' + i).classList.add('picked');
+            buildAttrGrid(i);
+            document.getElementById('keyReveal').classList.remove('show');
+        }
+
+        const KEY_LABELS = {
+            fullName: 'Full Name', firstName: 'First Name', lastName: 'Last Name',
+            dateOfBirth: 'Date of Birth', age: 'Age', gender: 'Gender',
+            nationality: 'Nationality', passportNumber: 'Passport No.', licenseNumber: 'License No.',
+            idNumber: 'ID Number', licenseClass: 'License Class', expiryDate: 'Expiry Date',
+            issueDate: 'Issue Date', address: 'Address', placeOfBirth: 'Place of Birth',
+            issuingCountry: 'Issuing Country', issuingState: 'Issuing State',
+            issuingAuthority: 'Issued By',
+        };
+
+        function buildAttrGrid(i) {
+            const cred = creds[i];
+            const grid = document.getElementById('attrGrid');
+            grid.innerHTML = '';
+
+            const entries = Object.entries(cred.data)
+                .filter(([k, v]) => k !== 'documentType' && v !== null && v !== undefined && v !== '');
+
+            entries.forEach(([k, v]) => {
+                const lbl = KEY_LABELS[k] || k;
+                const div = document.createElement('div');
+                div.className = 'attr-toggle on';
+                div.id = 'at-' + k;
+                div.setAttribute('data-key', k);
+                div.innerHTML = `<div class="attr-chk">✓</div>
+      <div><div class="attr-key">${lbl}</div><div class="attr-val">${String(v).slice(0, 22)}</div></div>`;
+                div.addEventListener('click', () => {
+                    div.classList.toggle('on');
+                    div.querySelector('.attr-chk').textContent = div.classList.contains('on') ? '✓' : '';
+                });
+                grid.appendChild(div);
+            });
+
+            document.getElementById('shareStep2Card').style.display = 'block';
+        }
+
+        async function generateOneTimeKey() {
+            if (selectedCredIdx === null) return;
+            const cred = creds[selectedCredIdx];
+
+            const selected = {};
+            document.querySelectorAll('.attr-toggle.on').forEach(el => {
+                const k = el.dataset.key;
+                if (cred.data[k] !== undefined) selected[k] = cred.data[k];
+            });
+
+            if (!Object.keys(selected).length) { toast('Select at least one field to share.'); return; }
+
+            const requester = document.getElementById('requesterField').value.trim();
+            const keyId = crypto.randomUUID();
+
+            const payload = {
+                vid: '2',
+                keyId,
+                fields: selected,
+                publicKeyHex: cred.publicKeyHex,
+                requester: requester || null,
+                credId: cred.id,
+                issuedAt: new Date().toISOString(),
+            };
+
+            const ephemeral = await crypto.subtle.generateKey(
+                { name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']
+            );
+            const pubRaw = await crypto.subtle.exportKey('raw', ephemeral.publicKey);
+            payload.ephemeralPubHex = hexOf(pubRaw);
+
+            const msgBytes = new TextEncoder().encode(stableJSON({ ...payload, sig: undefined }));
+            const sig = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, ephemeral.privateKey, msgBytes);
+            payload.sig = hexOf(sig);
+
+            const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
+                .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+            lastGenKey = 'VID.' + encoded;
+
+            document.getElementById('keyValueBox').textContent = lastGenKey;
+            document.getElementById('keyMetaLeft').textContent =
+                `${Object.keys(selected).length} field(s) · expires after 1 use` +
+                (requester ? ` · for ${requester}` : '');
+            document.getElementById('sfpItems').innerHTML =
+                Object.keys(selected).map(k => `<span class="sfp-item">${KEY_LABELS[k] || k}</span>`).join('');
+
+            document.getElementById('keyReveal').classList.add('show');
+            document.getElementById('keyReveal').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            toast('🔑 Key generated — copy and share it');
+        }
+
+        function copyKey() {
+            if (!lastGenKey) return;
+            navigator.clipboard.writeText(lastGenKey).then(() => toast('Copied to clipboard!'));
+        }
+
+        // ════════════════════════════════════════════════════════
+        //  UTILS
+        // ════════════════════════════════════════════════════════
+        function hexOf(buf) {
+            return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function stableJSON(obj) {
+            const sorted = {};
+            Object.keys(obj).sort().forEach(k => sorted[k] = obj[k]);
+            return JSON.stringify(sorted);
+        }
+
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+        function toast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2600);
+        }
+
+        function updateBadge() {
+            document.getElementById('credCount').textContent = creds.length;
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VaultID — Verify a Key</title>
+<meta name="description" content="Verify a VaultID one-time share key. No account needed — paste a key to see verified identity data.">
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="landing-body">
+
+<!-- NAV -->
+<nav class="landing-nav">
+  <a href="/" class="landing-logo">
+    <div class="landing-logo-mark">🏛</div>
+    <span class="landing-logo-text">VaultID</span>
+  </a>
+  <div class="landing-nav-links">
+    <a href="/" class="btn btn-gold btn-sm">Sign In</a>
+  </div>
+</nav>
+
+<!-- VERIFY SECTION -->
+<section style="flex:1;display:flex;align-items:flex-start;justify-content:center;padding:40px 24px 80px;">
+  <div style="width:100%;max-width:600px;">
+    <div class="view-head" style="text-align:center;margin-bottom:36px;">
+      <div class="hero-badge" style="margin-bottom:16px;">🔍 No account needed</div>
+      <div class="view-title" style="color:#f7f5f0;font-size:38px;">Verify a Key</div>
+      <div class="view-sub" style="color:rgba(247,245,240,0.4);">// paste a VaultID key to see the data inside · one-time use enforced</div>
+    </div>
+
+    <div class="card" style="background:var(--surface);color:var(--ink);">
+      <div class="card-head">
+        <div class="card-title">Enter Share Key</div>
+        <div class="card-sub">// paste the key you received from the user</div>
+      </div>
+      <div class="verify-input-wrap">
+        <input type="text" id="verifyInput" placeholder="VID.xxxxxxxx…" />
+        <button class="btn btn-gold" id="verifyBtn" onclick="verifyKey()">Verify →</button>
+      </div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--muted);">
+        ⓘ Once you verify a key, it is marked as used. The same key cannot be verified again.
+      </div>
+    </div>
+
+    <div class="verify-result-box" id="verifyResultBox"></div>
+
+    <div style="text-align:center;margin-top:32px;">
+      <a href="/" style="font-family:var(--mono);font-size:12px;color:var(--gold);text-decoration:none;">
+        ← Want your own wallet? Create a free account
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer class="landing-footer">
+  VaultID · Cryptographic identity verification · No account required to verify
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+const LS_USED = 'vaultid_v2_used_keys';
+let usedKeys = JSON.parse(localStorage.getItem(LS_USED) || '[]');
+
+const KEY_LABELS = {
+  fullName:'Full Name', firstName:'First Name', lastName:'Last Name',
+  dateOfBirth:'Date of Birth', age:'Age', gender:'Gender',
+  nationality:'Nationality', passportNumber:'Passport No.', licenseNumber:'License No.',
+  idNumber:'ID Number', licenseClass:'License Class', expiryDate:'Expiry Date',
+  issueDate:'Issue Date', address:'Address', placeOfBirth:'Place of Birth',
+  issuingCountry:'Issuing Country', issuingState:'Issuing State',
+  issuingAuthority:'Issued By',
+};
+
+// ══════════════════════════════════════════
+//  VERIFY
+// ══════════════════════════════════════════
+async function verifyKey() {
+  const raw = document.getElementById('verifyInput').value.trim();
+  const box = document.getElementById('verifyResultBox');
+
+  if (!raw.startsWith('VID.')) {
+    showVerifyFail(box, 'Invalid Key Format', 'This does not look like a VaultID share key.');
+    return;
+  }
+
+  let payload;
+  try {
+    const b64 = raw.slice(4).replace(/-/g,'+').replace(/_/g,'/');
+    payload = JSON.parse(decodeURIComponent(escape(atob(b64))));
+  } catch {
+    showVerifyFail(box, 'Malformed Key', 'Could not decode this key. It may be corrupted.');
+    return;
+  }
+
+  const keyId = payload.keyId;
+  if (!keyId) { showVerifyFail(box, 'Invalid Key', 'Key is missing a unique ID.'); return; }
+
+  if (usedKeys.includes(keyId)) {
+    showVerifyFail(box, 'Key Already Used', 'This one-time key has already been verified and is no longer valid.', true);
+    return;
+  }
+
+  // Signature verification
+  let sigValid = false;
+  try {
+    const { sig, ...payloadForVerify } = payload;
+    const msgBytes = new TextEncoder().encode(stableJSON(payloadForVerify));
+    const pubRaw   = new Uint8Array(payload.ephemeralPubHex.match(/.{2}/g).map(b=>parseInt(b,16)));
+    const pubKey   = await crypto.subtle.importKey(
+      'raw', pubRaw, { name:'ECDSA', namedCurve:'P-256' }, false, ['verify']
+    );
+    const sigBytes = new Uint8Array(sig.match(/.{2}/g).map(b=>parseInt(b,16)));
+    sigValid = await crypto.subtle.verify({ name:'ECDSA', hash:'SHA-256' }, pubKey, sigBytes, msgBytes);
+  } catch { sigValid = false; }
+
+  if (!sigValid) {
+    showVerifyFail(box, 'Signature Invalid', "This key's signature could not be verified. It may have been tampered with.");
+    return;
+  }
+
+  // Mark as used
+  usedKeys.push(keyId);
+  localStorage.setItem(LS_USED, JSON.stringify(usedKeys));
+
+  // Show success
+  const fields = payload.fields || {};
+  const issuedAt = payload.issuedAt ? new Date(payload.issuedAt).toLocaleString() : '—';
+
+  box.className = 'verify-result-box show vr-ok';
+  box.innerHTML = `
+    <div class="vr-icon">✅</div>
+    <div class="vr-title">Identity Verified</div>
+    <div class="vr-sub">
+      ${payload.requester ? `Requested by: <strong>${payload.requester}</strong> · ` : ''}
+      Issued: ${issuedAt} · Signature: valid
+    </div>
+    <div class="vr-fields">
+      ${Object.entries(fields).map(([k,v]) => `
+        <div class="vr-field">
+          <span class="vr-key">${KEY_LABELS[k]||k}</span>
+          <span class="vr-val">${v}</span>
+        </div>`).join('')}
+    </div>
+    <div class="vr-privacy-note">
+      🔒 Only the fields above were disclosed. All other identity data remains private to the holder.<br>
+      Key ID: ${keyId}<br>
+      Public Key: ${(payload.publicKeyHex||'').slice(0,24)}…
+    </div>
+    <div class="vr-used-badge">⛔ This key is now marked as used and cannot be verified again.</div>`;
+}
+
+function showVerifyFail(box, title, msg, alreadyUsed = false) {
+  box.className = 'verify-result-box show vr-fail';
+  box.innerHTML = `
+    <div class="vr-icon">${alreadyUsed ? '⛔' : '❌'}</div>
+    <div class="vr-title">${title}</div>
+    <div class="vr-sub">${msg}</div>`;
+}
+
+// ══════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════
+function stableJSON(obj) {
+  const sorted = {};
+  Object.keys(obj).sort().forEach(k => sorted[k] = obj[k]);
+  return JSON.stringify(sorted);
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// Enter key support
+document.getElementById('verifyInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') verifyKey();
+});
+</script>
+</body>
+</html>
