@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-VaultID Local Dev Server
+Show-Half Local Dev Server
 Serves static files from public/ and proxies /api/extract to Groq.
 Usage: python dev_server.py
 """
@@ -19,7 +19,7 @@ API_KEY = os.environ.get("GROQ_API_KEY", "")
 if not API_KEY:
     print()
     print("=" * 54)
-    print("   VaultID Dev Server")
+    print("   Show-Half Dev Server")
     print("=" * 54)
     print()
     print("  Paste your Groq API key (for AI extraction):")
@@ -120,7 +120,7 @@ class Handler(SimpleHTTPRequestHandler):
 
 if __name__ == "__main__":
     server = HTTPServer(("localhost", PORT), Handler)
-    print(f"\n  [OK] VaultID running -> http://localhost:{PORT}")
+    print(f"\n  [OK] Show-Half running -> http://localhost:{PORT}")
     print(f"  Opening browser...")
     print(f"  Press Ctrl+C to stop.\n")
 
@@ -131,3 +131,5 @@ if __name__ == "__main__":
         server.serve_forever()
     except KeyboardInterrupt:
         print("\n  Stopped.")
+
+# Copyright (c) 2026 Pratyush Chaudhari. All Rights Reserved.

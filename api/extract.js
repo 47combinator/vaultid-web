@@ -71,7 +71,8 @@ export default async function handler(req, res) {
     return res.status(200).json({ content: [{ type: 'text', text: JSON.stringify(parsed) }] });
 
   } catch (e) {
-    console.error('Extract error:', e);
     return res.status(500).json({ error: { message: e.message || 'Unexpected error' } });
   }
 }
+
+// Copyright (c) 2026 Pratyush Chaudhari. All Rights Reserved.

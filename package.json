@@ -1,5 +1,6 @@
 {
-  "name": "vaultid-web",
+  "name": "show-half",
   "version": "1.0.0",
-  "private": true
+  "private": true,
+  "copyright": "Copyright (c) 2026 Pratyush Chaudhari. All Rights Reserved."
 }
