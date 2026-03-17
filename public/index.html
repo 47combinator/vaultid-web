@@ -4,68 +4,1127 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Show-Half - Secure Identity Wallet</title>
+  <title>Show-Half — Cryptographic Identity Wallet</title>
   <meta name="description"
-    content="Show-Half is a secure, encrypted identity wallet. Share verified identity data with one-time cryptographic keys.">
-  <link rel="stylesheet" href="/css/styles.css">
+    content="Show-Half is a privacy-first, client-side encrypted identity wallet. Share verified identity data with one-time cryptographic keys.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════
+       Show-Half — Landing Page Design System
+       Inspired by Ignisia dark premium aesthetic
+       ═══════════════════════════════════════════ */
+
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #0a0a0f;
+      --bg2: #0e0e16;
+      --surface: rgba(255, 255, 255, 0.04);
+      --surface-border: rgba(255, 255, 255, 0.08);
+      --text: #e8e6f0;
+      --text-muted: rgba(232, 230, 240, 0.45);
+      --text-dim: rgba(232, 230, 240, 0.25);
+      --purple: #8b5cf6;
+      --purple-glow: rgba(139, 92, 246, 0.25);
+      --purple-dim: rgba(139, 92, 246, 0.12);
+      --violet: #a78bfa;
+      --serif: 'Playfair Display', Georgia, serif;
+      --sans: 'Inter', -apple-system, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+      --radius: 16px;
+    }
+
+    html {
+      font-size: 15px;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── ANIMATED BACKGROUND ── */
+    .bg-glow {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .bg-glow::before {
+      content: '';
+      position: absolute;
+      top: -20%;
+      left: 30%;
+      width: 700px;
+      height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.08), transparent 70%);
+      animation: floatGlow 12s ease-in-out infinite;
+    }
+
+    .bg-glow::after {
+      content: '';
+      position: absolute;
+      bottom: -10%;
+      right: 20%;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.06), transparent 70%);
+      animation: floatGlow 15s ease-in-out infinite reverse;
+    }
+
+    @keyframes floatGlow {
+
+      0%,
+      100% {
+        transform: translate(0, 0) scale(1);
+      }
+
+      50% {
+        transform: translate(40px, -30px) scale(1.15);
+      }
+    }
+
+    /* ── NAVBAR (Glassmorphism) ── */
+    .navbar {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 28px;
+      border-radius: 50px;
+      background: rgba(14, 14, 22, 0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      width: calc(100% - 80px);
+      max-width: 960px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .nav-brand {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 600;
+      font-style: italic;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: -0.3px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-links a {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 30px;
+      transition: all 0.2s ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .nav-cta {
+      background: var(--purple) !important;
+      color: #fff !important;
+      font-weight: 500 !important;
+      padding: 9px 22px !important;
+      box-shadow: 0 0 20px var(--purple-glow);
+      transition: all 0.25s ease !important;
+    }
+
+    .nav-cta:hover {
+      background: #7c3aed !important;
+      transform: translateY(-1px);
+      box-shadow: 0 0 30px rgba(139, 92, 246, 0.4) !important;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-height: 100vh;
+      padding: 140px 40px 80px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 18px;
+      border-radius: 30px;
+      background: var(--purple-dim);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--violet);
+      margin-bottom: 32px;
+      letter-spacing: 0.5px;
+      animation: fadeDown 0.8s ease;
+    }
+
+    .hero-badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--purple);
+      box-shadow: 0 0 8px var(--purple);
+    }
+
+    .hero h1 {
+      font-family: var(--serif);
+      font-size: clamp(48px, 7vw, 80px);
+      font-weight: 400;
+      line-height: 1.05;
+      letter-spacing: -1.5px;
+      margin-bottom: 8px;
+      animation: fadeUp 0.8s ease 0.1s both;
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      font-weight: 400;
+      color: var(--violet);
+    }
+
+    .hero-tagline {
+      font-family: var(--sans);
+      font-size: 18px;
+      font-weight: 300;
+      color: var(--text-muted);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+      animation: fadeUp 0.8s ease 0.2s both;
+    }
+
+    .hero-tagline span {
+      font-style: italic;
+      font-family: var(--serif);
+      text-transform: none;
+      letter-spacing: 0;
+      color: var(--text);
+    }
+
+    .hero-sub {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.7;
+      max-width: 500px;
+      margin: 0 auto 40px;
+      animation: fadeUp 0.8s ease 0.3s both;
+    }
+
+    .hero-pills {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 44px;
+      animation: fadeUp 0.8s ease 0.35s both;
+    }
+
+    .hero-pill {
+      padding: 8px 20px;
+      border-radius: 30px;
+      border: 1px solid var(--surface-border);
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      background: var(--surface);
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+      animation: fadeUp 0.8s ease 0.4s both;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      border-radius: 50px;
+      border: none;
+      cursor: pointer;
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(135deg, var(--purple), #6d28d9);
+      box-shadow: 0 0 30px var(--purple-glow), 0 4px 20px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 50px rgba(139, 92, 246, 0.4), 0 8px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      border-radius: 50px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      cursor: pointer;
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      background: transparent;
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+
+    .btn-outline:hover {
+      border-color: rgba(139, 92, 246, 0.4);
+      background: rgba(139, 92, 246, 0.08);
+      transform: translateY(-2px);
+    }
+
+    /* ── STATS / AT A GLANCE ── */
+    .stats-section {
+      position: relative;
+      z-index: 1;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 40px 80px;
+    }
+
+    .stats-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius);
+      padding: 48px 40px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stats-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--purple), transparent);
+    }
+
+    .stats-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 30px;
+      background: var(--purple-dim);
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--violet);
+      margin-bottom: 32px;
+    }
+
+    .stats-label::before {
+      content: '✦';
+      font-size: 10px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+    }
+
+    .stat-item h3 {
+      font-family: var(--serif);
+      font-size: 42px;
+      font-weight: 400;
+      letter-spacing: -1px;
+      margin-bottom: 4px;
+    }
+
+    .stat-item .stat-tag {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--purple);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .stat-item p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ── FEATURES ── */
+    .features-section {
+      position: relative;
+      z-index: 1;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 40px 80px;
+    }
+
+    .section-head {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .section-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 30px;
+      background: var(--purple-dim);
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--violet);
+      margin-bottom: 20px;
+    }
+
+    .section-badge::before {
+      content: '✦';
+      font-size: 10px;
+    }
+
+    .section-title {
+      font-family: var(--serif);
+      font-size: clamp(32px, 4vw, 44px);
+      font-weight: 400;
+      letter-spacing: -0.5px;
+      margin-bottom: 12px;
+    }
+
+    .section-title em {
+      font-style: italic;
+      color: var(--violet);
+    }
+
+    .section-sub {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--text-muted);
+      max-width: 520px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius);
+      padding: 28px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card:hover {
+      border-color: rgba(139, 92, 246, 0.25);
+      background: rgba(255, 255, 255, 0.06);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .feature-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .feature-card:hover::after {
+      opacity: 1;
+    }
+
+    .feature-icon-badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--violet);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .feature-icon-badge::before {
+      content: '✦';
+    }
+
+    .feature-title {
+      font-family: var(--serif);
+      font-size: 19px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      letter-spacing: -0.2px;
+    }
+
+    .feature-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+
+    /* ── CTA Cards ── */
+    .cta-section {
+      position: relative;
+      z-index: 1;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 40px 100px;
+    }
+
+    .cta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .cta-card {
+      background: linear-gradient(145deg, rgba(139, 92, 246, 0.08), rgba(139, 92, 246, 0.02));
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      border-radius: var(--radius);
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.1), transparent 70%);
+      pointer-events: none;
+    }
+
+    .cta-tag {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--violet);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .cta-tag::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--purple);
+    }
+
+    .cta-card h3 {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .cta-card p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      justify-content: center;
+      padding: 13px 24px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(135deg, var(--purple), #6d28d9);
+      box-shadow: 0 4px 20px var(--purple-glow);
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+
+    .cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(139, 92, 246, 0.35);
+    }
+
+    .cta-btn-sub {
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-top: 10px;
+    }
+
+    /* ── FOOTER ── */
+    .footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 40px;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .footer-brand {
+      font-family: var(--serif);
+      font-size: 36px;
+      font-style: italic;
+      font-weight: 400;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .footer-sub {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 28px;
+    }
+
+    .footer-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 28px;
+      border-radius: 50px;
+      border: none;
+      cursor: pointer;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(135deg, var(--purple), #6d28d9);
+      box-shadow: 0 0 25px var(--purple-glow);
+      transition: all 0.3s ease;
+      margin-bottom: 40px;
+      text-decoration: none;
+    }
+
+    .footer-cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 40px rgba(139, 92, 246, 0.4);
+    }
+
+    .footer-bottom {
+      padding-top: 28px;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .footer-copy {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .footer-right {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    /* ── AUTH MODAL ── */
+    .auth-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 10, 15, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .auth-overlay.show {
+      display: flex;
+    }
+
+    .auth-card {
+      background: var(--bg2);
+      border: 1px solid var(--surface-border);
+      border-radius: 20px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+      position: relative;
+      animation: modalIn 0.3s ease;
+    }
+
+    @keyframes modalIn {
+      from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.97);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .auth-close {
+      position: absolute;
+      top: 16px;
+      right: 20px;
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+
+    .auth-close:hover {
+      color: var(--text);
+    }
+
+    .auth-card-head {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .auth-card-title {
+      font-family: var(--serif);
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      margin-bottom: 6px;
+    }
+
+    .auth-card-sub {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .auth-field {
+      margin-bottom: 16px;
+    }
+
+    .auth-field label {
+      display: block;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .auth-field input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      font-family: var(--mono);
+      font-size: 13px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .auth-field input:focus {
+      border-color: var(--purple);
+      background: rgba(139, 92, 246, 0.05);
+    }
+
+    .auth-field input::placeholder {
+      color: var(--text-dim);
+    }
+
+    .auth-error {
+      display: none;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: #f87171;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+
+    .auth-error.show {
+      display: block;
+    }
+
+    .auth-btn {
+      width: 100%;
+      padding: 13px 24px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(135deg, var(--purple), #6d28d9);
+      box-shadow: 0 4px 20px var(--purple-glow);
+      transition: all 0.3s ease;
+      margin-top: 8px;
+    }
+
+    .auth-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 28px rgba(139, 92, 246, 0.4);
+    }
+
+    .auth-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .auth-switch {
+      text-align: center;
+      margin-top: 18px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .auth-switch a {
+      color: var(--violet);
+      text-decoration: none;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .auth-switch a:hover {
+      text-decoration: underline;
+    }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: var(--bg2);
+      border: 1px solid var(--surface-border);
+      color: var(--text);
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-family: var(--mono);
+      font-size: 12px;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .fade-in {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.6s ease;
+    }
+
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .navbar {
+        width: calc(100% - 32px);
+        padding: 10px 20px;
+      }
+
+      .nav-links a:not(.nav-cta) {
+        display: none;
+      }
+
+      .hero {
+        padding: 120px 24px 60px;
+      }
+
+      .hero-pills {
+        flex-wrap: wrap;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .cta-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-section,
+      .features-section,
+      .cta-section {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        text-align: center;
+      }
+    }
+  </style>
 </head>
 
-<body class="landing-body">
+<body>
 
-  <nav class="landing-nav">
-    <a href="/" class="landing-logo">
-      <div class="landing-logo-mark">&#127963;</div>
-      <span class="landing-logo-text">Show-Half</span>
-    </a>
-    <div class="landing-nav-links">
-      <a href="/verify.html">Verify a Key</a>
-      <a href="#" class="btn btn-gold btn-sm" onclick="openAuth('login')">Sign In</a>
+  <!-- Animated Background -->
+  <div class="bg-glow"></div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="/" class="nav-brand">Show-Half</a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="/verify.html">Verify</a>
+      <a href="#" class="nav-cta" onclick="openAuth('signup'); return false;">Register Now</a>
     </div>
   </nav>
 
+  <!-- HERO -->
   <section class="hero">
-    <div class="hero-inner">
-      <div class="hero-badge">End-to-end encrypted</div>
-      <h1>Your identity,<br><span class="gold">your control.</span></h1>
-      <p class="hero-sub">
-        Import identity documents, extract data with AI, and share verified
-        credentials using one-time cryptographic keys.
-      </p>
-      <div class="hero-actions">
-        <button class="btn btn-gold" onclick="openAuth('signup')">Create Free Account</button>
-        <a href="/verify.html" class="btn btn-ghost" style="color:#f7f5f0;border-color:rgba(247,245,240,0.2);">Verify a
-          Key</a>
+    <div class="hero-badge">End-to-end encrypted · Zero-knowledge architecture</div>
+
+    <h1>Show-Half</h1>
+
+    <div class="hero-tagline">Show only half. <span>Keep the rest.</span></div>
+
+    <p class="hero-sub">
+      A privacy-first identity wallet. Import documents, extract data with AI,
+      and share verified credentials using one-time cryptographic keys.
+    </p>
+
+    <div class="hero-pills">
+      <span class="hero-pill">Client-Side Crypto</span>
+      <span class="hero-pill">AI Extraction</span>
+      <span class="hero-pill">One-Time Keys</span>
+    </div>
+
+    <div class="hero-actions">
+      <button class="btn-primary" onclick="openAuth('signup')">Get Started →</button>
+      <a href="/verify.html" class="btn-outline">Verify a Key</a>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats-section fade-in">
+    <div class="stats-card">
+      <div class="stats-label">Platform at a Glance</div>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <h3>P-256</h3>
+          <div class="stat-tag">ECDSA Signatures</div>
+          <p>Military-grade elliptic curve cryptography generated entirely in your browser.</p>
+        </div>
+        <div class="stat-item">
+          <h3>Zero</h3>
+          <div class="stat-tag">Server Knowledge</div>
+          <p>Private keys and plaintext data never leave your device. Ever.</p>
+        </div>
+        <div class="stat-item">
+          <h3>One-Time</h3>
+          <div class="stat-tag">Verification Keys</div>
+          <p>Self-destructing tokens that expire after a single use, preventing data reuse.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <section class="features-section fade-in" id="features">
+    <div class="section-head">
+      <div class="section-badge">Core Features</div>
+      <h2 class="section-title">How Show-Half <em>works.</em></h2>
+      <p class="section-sub">From document scan to cryptographic proof — here's how your identity stays protected.</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon-badge">AI-Powered</div>
+        <div class="feature-title">Document Scanning</div>
+        <p class="feature-desc">Upload a passport, license, or ID card. LLaMA Vision AI extracts all fields into
+          structured data automatically.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon-badge">Selective Disclosure</div>
+        <div class="feature-title">Share Only What's Needed</div>
+        <p class="feature-desc">Choose exactly which fields to reveal. Prove your age without exposing your address, ID
+          number, or full name.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon-badge">Cryptographic</div>
+        <div class="feature-title">One-Time Verification Keys</div>
+        <p class="feature-desc">Generate secure, self-destructing tokens signed with ECDSA P-256. Each key works exactly
+          once and cannot be replayed.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon-badge">Trustless</div>
+        <div class="feature-title">Public Verification Portal</div>
+        <p class="feature-desc">Anyone can verify a key instantly — no account needed. Mathematical proof of
+          authenticity, tamper-evident by design.</p>
       </div>
     </div>
   </section>
 
-  <div class="features">
-    <div class="feature-card">
-      <div class="feature-icon">&#128248;</div>
-      <div class="feature-title">AI Document Scan</div>
-      <div class="feature-desc">Upload a passport, license, or ID card - AI extracts all fields instantly.</div>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">&#128273;</div>
-      <div class="feature-title">One-Time Keys</div>
-      <div class="feature-desc">Share only the fields you choose via a cryptographic key that expires after one use.
+  <!-- CTA CARDS -->
+  <section class="cta-section fade-in">
+    <div class="cta-grid">
+      <div class="cta-card">
+        <div class="cta-tag">Identity Wallet</div>
+        <h3>Get Started</h3>
+        <p>Create your free encrypted identity wallet. Import documents, manage credentials, and share securely.</p>
+        <button class="cta-btn" onclick="openAuth('signup')">Create Free Account →</button>
+        <div class="cta-btn-sub">Free forever · No credit card</div>
+      </div>
+      <div class="cta-card">
+        <div class="cta-tag">Verification</div>
+        <h3>Verify a Key</h3>
+        <p>Received a Show-Half key? Paste it into our public portal to instantly verify the identity data inside.</p>
+        <a class="cta-btn" href="/verify.html">Open Verification Portal →</a>
+        <div class="cta-btn-sub">No account required</div>
       </div>
     </div>
-    <div class="feature-card">
-      <div class="feature-icon">&#9989;</div>
-      <div class="feature-title">Instant Verify</div>
-      <div class="feature-desc">Anyone can verify a key - no account needed. Tamper-proof ECDSA signatures.</div>
-    </div>
-  </div>
+  </section>
 
-  <footer class="landing-footer">
-    Show-Half - Built with Web Crypto API
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-brand">Show-Half</div>
+    <div class="footer-sub">Show only half. Keep the rest. Your identity, your control.</div>
+    <button class="footer-cta" onclick="openAuth('signup')">Register Now →</button>
+    <div class="footer-bottom">
+      <div class="footer-copy">© 2026 Pratyush Chaudhari. All rights reserved.</div>
+      <div class="footer-right">Built with Web Crypto API · Powered by Groq AI</div>
+    </div>
   </footer>
 
   <!-- AUTH MODAL -->
   <div class="auth-overlay" id="authOverlay" onclick="if(event.target===this)closeAuth()">
     <div class="auth-card" id="authCard">
-      <button class="auth-close" onclick="closeAuth()">x</button>
+      <button class="auth-close" onclick="closeAuth()">✕</button>
 
       <div id="loginForm">
         <div class="auth-card-head">
@@ -81,8 +1140,7 @@
           <label>Password</label>
           <input type="password" id="loginPassword" placeholder="password">
         </div>
-        <button class="btn btn-gold btn-full" id="loginBtn" onclick="handleLogin()" style="margin-top:8px;">Sign
-          In</button>
+        <button class="auth-btn" id="loginBtn" onclick="handleLogin()">Sign In</button>
         <div class="auth-switch">
           Don't have an account? <a onclick="switchAuth('signup')">Sign up</a>
         </div>
@@ -106,8 +1164,7 @@
           <label>Confirm Password</label>
           <input type="password" id="signupConfirm" placeholder="same password">
         </div>
-        <button class="btn btn-gold btn-full" id="signupBtn" onclick="handleSignup()" style="margin-top:8px;">Create
-          Account</button>
+        <button class="auth-btn" id="signupBtn" onclick="handleSignup()">Create Account</button>
         <div class="auth-switch">
           Already have an account? <a onclick="switchAuth('login')">Sign in</a>
         </div>
@@ -117,7 +1174,7 @@
 
   <div class="toast" id="toast"></div>
   <div id="initError"
-    style="display:none;position:fixed;top:0;left:0;right:0;padding:16px;background:#b83a3a;color:white;font-family:monospace;font-size:13px;z-index:99999;text-align:center;">
+    style="display:none;position:fixed;top:0;left:0;right:0;padding:16px;background:#ef4444;color:white;font-family:monospace;font-size:13px;z-index:99999;text-align:center;">
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -219,13 +1276,11 @@
           return;
         }
 
-        // If we got a session, go to app
         if (result.data && result.data.session) {
           window.location.href = '/app.html';
           return;
         }
 
-        // Try signing in directly
         sb.auth.signInWithPassword({ email: email, password: password }).then(function (r2) {
           if (!r2.error && r2.data && r2.data.session) {
             window.location.href = '/app.html';
@@ -250,6 +1305,21 @@
       t.classList.add('show');
       setTimeout(function () { t.classList.remove('show'); }, 3500);
     }
+
+    // -----------------------------------------------
+    //  SCROLL ANIMATIONS
+    // -----------------------------------------------
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.fade-in').forEach(function (el) {
+      observer.observe(el);
+    });
   </script>
 </body>
 

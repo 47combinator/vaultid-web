@@ -7,66 +7,581 @@
   <title>Show-Half — Verify a Key</title>
   <meta name="description"
     content="Verify a Show-Half one-time share key. No account needed — paste a key to see verified identity data.">
-  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    :root {
+      --bg: #0a0a0f;
+      --bg2: #0e0e16;
+      --surface: rgba(255, 255, 255, 0.04);
+      --surface-border: rgba(255, 255, 255, 0.08);
+      --text: #e8e6f0;
+      --text-muted: rgba(232, 230, 240, 0.45);
+      --text-dim: rgba(232, 230, 240, 0.25);
+      --purple: #8b5cf6;
+      --purple-glow: rgba(139, 92, 246, 0.25);
+      --purple-dim: rgba(139, 92, 246, 0.12);
+      --violet: #a78bfa;
+      --green: #22c55e;
+      --green-bg: rgba(34, 197, 94, 0.08);
+      --green-border: rgba(34, 197, 94, 0.2);
+      --red: #ef4444;
+      --red-bg: rgba(239, 68, 68, 0.08);
+      --red-border: rgba(239, 68, 68, 0.2);
+      --serif: 'Playfair Display', Georgia, serif;
+      --sans: 'Inter', -apple-system, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+      --radius: 16px;
+    }
+
+    html {
+      font-size: 15px;
+      scroll-behavior: smooth
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased
+    }
+
+    .bg-glow {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden
+    }
+
+    .bg-glow::before {
+      content: '';
+      position: absolute;
+      top: -20%;
+      left: 30%;
+      width: 700px;
+      height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.08), transparent 70%);
+      animation: floatGlow 12s ease-in-out infinite
+    }
+
+    .bg-glow::after {
+      content: '';
+      position: absolute;
+      bottom: -10%;
+      right: 20%;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.06), transparent 70%);
+      animation: floatGlow 15s ease-in-out infinite reverse
+    }
+
+    @keyframes floatGlow {
+
+      0%,
+      100% {
+        transform: translate(0, 0) scale(1)
+      }
+
+      50% {
+        transform: translate(40px, -30px) scale(1.15)
+      }
+    }
+
+    /* Navbar */
+    .navbar {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 28px;
+      border-radius: 50px;
+      background: rgba(14, 14, 22, 0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      width: calc(100% - 80px);
+      max-width: 960px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4)
+    }
+
+    .nav-brand {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 600;
+      font-style: italic;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: -0.3px
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    .nav-links a {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 30px;
+      transition: all 0.2s ease
+    }
+
+    .nav-links a:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.06)
+    }
+
+    .nav-cta {
+      background: var(--purple) !important;
+      color: #fff !important;
+      font-weight: 500 !important;
+      padding: 9px 22px !important;
+      box-shadow: 0 0 20px var(--purple-glow);
+      transition: all 0.25s ease !important
+    }
+
+    .nav-cta:hover {
+      background: #7c3aed !important;
+      transform: translateY(-1px);
+      box-shadow: 0 0 30px rgba(139, 92, 246, 0.4) !important
+    }
+
+    /* Main */
+    .verify-main {
+      flex: 1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 120px 24px 80px;
+      position: relative;
+      z-index: 1
+    }
+
+    .verify-wrap {
+      width: 100%;
+      max-width: 620px
+    }
+
+    .verify-head {
+      text-align: center;
+      margin-bottom: 36px
+    }
+
+    .verify-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 18px;
+      border-radius: 30px;
+      background: var(--purple-dim);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--violet);
+      margin-bottom: 20px
+    }
+
+    .verify-badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--purple);
+      box-shadow: 0 0 8px var(--purple)
+    }
+
+    .verify-title {
+      font-family: var(--serif);
+      font-size: clamp(32px, 5vw, 42px);
+      font-weight: 400;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px
+    }
+
+    .verify-title em {
+      font-style: italic;
+      color: var(--violet)
+    }
+
+    .verify-sub {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.6
+    }
+
+    /* Card */
+    .v-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius);
+      padding: 28px;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 16px
+    }
+
+    .v-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent)
+    }
+
+    .v-card-title {
+      font-family: var(--serif);
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 4px
+    }
+
+    .v-card-sub {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 18px
+    }
+
+    .verify-input-wrap {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px
+    }
+
+    .verify-input-wrap input {
+      flex: 1;
+      padding: 13px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      font-family: var(--mono);
+      font-size: 13px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s
+    }
+
+    .verify-input-wrap input:focus {
+      border-color: var(--purple);
+      background: rgba(139, 92, 246, 0.05)
+    }
+
+    .verify-input-wrap input::placeholder {
+      color: var(--text-dim)
+    }
+
+    .verify-btn {
+      padding: 13px 28px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(135deg, var(--purple), #6d28d9);
+      box-shadow: 0 4px 20px var(--purple-glow);
+      transition: all 0.3s ease;
+      white-space: nowrap
+    }
+
+    .verify-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 28px rgba(139, 92, 246, 0.4)
+    }
+
+    .v-info {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    /* Result */
+    .verify-result {
+      border-radius: var(--radius);
+      padding: 28px;
+      display: none;
+      margin-top: 16px;
+      position: relative;
+      overflow: hidden
+    }
+
+    .verify-result.show {
+      display: block;
+      animation: fadeUp 0.35s ease
+    }
+
+    .verify-result::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px
+    }
+
+    .vr-ok {
+      background: var(--green-bg);
+      border: 1px solid var(--green-border)
+    }
+
+    .vr-ok::before {
+      background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.4), transparent)
+    }
+
+    .vr-fail {
+      background: var(--red-bg);
+      border: 1px solid var(--red-border)
+    }
+
+    .vr-fail::before {
+      background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.4), transparent)
+    }
+
+    .vr-icon {
+      font-size: 36px;
+      margin-bottom: 10px
+    }
+
+    .vr-title {
+      font-family: var(--serif);
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 6px
+    }
+
+    .vr-sub {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 18px
+    }
+
+    .vr-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 8px
+    }
+
+    .vr-field {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: rgba(34, 197, 94, 0.06);
+      border: 1px solid rgba(34, 197, 94, 0.1)
+    }
+
+    .vr-key {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted)
+    }
+
+    .vr-val {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--green)
+    }
+
+    .vr-privacy-note {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: rgba(34, 197, 94, 0.04);
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      line-height: 1.6
+    }
+
+    .vr-used-badge {
+      margin-top: 12px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: var(--red-bg);
+      border: 1px solid var(--red-border);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--red);
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    /* Back link */
+    .back-link {
+      text-align: center;
+      margin-top: 28px
+    }
+
+    .back-link a {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--violet);
+      text-decoration: none;
+      transition: color 0.2s
+    }
+
+    .back-link a:hover {
+      color: var(--purple)
+    }
+
+    /* Footer */
+    .v-footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 24px 40px;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-dim)
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: var(--bg2);
+      border: 1px solid var(--surface-border);
+      color: var(--text);
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-family: var(--mono);
+      font-size: 12px;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5)
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0)
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    @media(max-width:768px) {
+      .navbar {
+        width: calc(100% - 32px);
+        padding: 10px 20px
+      }
+
+      .nav-links a:not(.nav-cta) {
+        display: none
+      }
+
+      .verify-main {
+        padding: 100px 16px 60px
+      }
+
+      .verify-input-wrap {
+        flex-direction: column
+      }
+    }
+  </style>
 </head>
 
-<body class="landing-body">
+<body>
 
-  <!-- NAV -->
-  <nav class="landing-nav">
-    <a href="/" class="landing-logo">
-      <div class="landing-logo-mark">🏛</div>
-      <span class="landing-logo-text">Show-Half</span>
-    </a>
-    <div class="landing-nav-links">
-      <a href="/" class="btn btn-gold btn-sm">Sign In</a>
+  <div class="bg-glow"></div>
+
+  <nav class="navbar">
+    <a href="/" class="nav-brand">Show-Half</a>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/" class="nav-cta">Sign In</a>
     </div>
   </nav>
 
-  <!-- VERIFY SECTION -->
-  <section style="flex:1;display:flex;align-items:flex-start;justify-content:center;padding:40px 24px 80px;">
-    <div style="width:100%;max-width:600px;">
-      <div class="view-head" style="text-align:center;margin-bottom:36px;">
-        <div class="hero-badge" style="margin-bottom:16px;">🔍 No account needed</div>
-        <div class="view-title" style="color:#f7f5f0;font-size:38px;">Verify a Key</div>
-        <div class="view-sub" style="color:rgba(247,245,240,0.4);">// paste a Show-Half key to see the data inside ·
-          one-time use enforced</div>
+  <section class="verify-main">
+    <div class="verify-wrap">
+      <div class="verify-head">
+        <div class="verify-badge">No account needed</div>
+        <div class="verify-title">Verify a <em>Key</em></div>
+        <div class="verify-sub">Paste a Show-Half key to see the data inside · one-time use enforced</div>
       </div>
 
-      <div class="card" style="background:var(--surface);color:var(--ink);">
-        <div class="card-head">
-          <div class="card-title">Enter Share Key</div>
-          <div class="card-sub">// paste the key you received from the user</div>
-        </div>
+      <div class="v-card">
+        <div class="v-card-title">Enter Share Key</div>
+        <div class="v-card-sub">Paste the key you received from the user</div>
         <div class="verify-input-wrap">
           <input type="text" id="verifyInput" placeholder="VID.xxxxxxxx…" />
-          <button class="btn btn-gold" id="verifyBtn" onclick="verifyKey()">Verify →</button>
+          <button class="verify-btn" id="verifyBtn" onclick="verifyKey()">Verify →</button>
         </div>
-        <div style="font-family:var(--mono);font-size:11px;color:var(--muted);">
+        <div class="v-info">
           ⓘ Once you verify a key, it is marked as used. The same key cannot be verified again.
         </div>
       </div>
 
-      <div class="verify-result-box" id="verifyResultBox"></div>
+      <div class="verify-result" id="verifyResultBox"></div>
 
-      <div style="text-align:center;margin-top:32px;">
-        <a href="/" style="font-family:var(--mono);font-size:12px;color:var(--gold);text-decoration:none;">
-          ← Want your own wallet? Create a free account
-        </a>
+      <div class="back-link">
+        <a href="/">← Want your own wallet? Create a free account</a>
       </div>
     </div>
   </section>
 
-  <footer class="landing-footer">
-    Show-Half · Cryptographic identity verification · No account required to verify
+  <footer class="v-footer">
+    Show-Half · Cryptographic identity verification · © 2026 Pratyush Chaudhari
   </footer>
 
   <div class="toast" id="toast"></div>
 
   <script>
-    // ══════════════════════════════════════════
-    //  STATE
-    // ══════════════════════════════════════════
     const LS_USED = 'showhalf_v2_used_keys';
     let usedKeys = JSON.parse(localStorage.getItem(LS_USED) || '[]');
 
@@ -80,9 +595,6 @@
       issuingAuthority: 'Issued By',
     };
 
-    // ══════════════════════════════════════════
-    //  VERIFY
-    // ══════════════════════════════════════════
     async function verifyKey() {
       const raw = document.getElementById('verifyInput').value.trim();
       const box = document.getElementById('verifyResultBox');
@@ -109,7 +621,6 @@
         return;
       }
 
-      // Signature verification
       let sigValid = false;
       try {
         const { sig, ...payloadForVerify } = payload;
@@ -127,15 +638,13 @@
         return;
       }
 
-      // Mark as used
       usedKeys.push(keyId);
       localStorage.setItem(LS_USED, JSON.stringify(usedKeys));
 
-      // Show success
       const fields = payload.fields || {};
       const issuedAt = payload.issuedAt ? new Date(payload.issuedAt).toLocaleString() : '—';
 
-      box.className = 'verify-result-box show vr-ok';
+      box.className = 'verify-result show vr-ok';
       box.innerHTML = `
     <div class="vr-icon">✅</div>
     <div class="vr-title">Identity Verified</div>
@@ -159,16 +668,13 @@
     }
 
     function showVerifyFail(box, title, msg, alreadyUsed = false) {
-      box.className = 'verify-result-box show vr-fail';
+      box.className = 'verify-result show vr-fail';
       box.innerHTML = `
     <div class="vr-icon">${alreadyUsed ? '⛔' : '❌'}</div>
     <div class="vr-title">${title}</div>
     <div class="vr-sub">${msg}</div>`;
     }
 
-    // ══════════════════════════════════════════
-    //  UTILS
-    // ══════════════════════════════════════════
     function stableJSON(obj) {
       const sorted = {};
       Object.keys(obj).sort().forEach(k => sorted[k] = obj[k]);
@@ -182,7 +688,6 @@
       setTimeout(() => t.classList.remove('show'), 2600);
     }
 
-    // Enter key support
     document.getElementById('verifyInput').addEventListener('keydown', e => {
       if (e.key === 'Enter') verifyKey();
     });
